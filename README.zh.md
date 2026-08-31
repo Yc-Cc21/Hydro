@@ -1,5 +1,7 @@
 # Hydro 💧
 
+[**English**](README.md) | [**简体中文**](README.zh.md)
+
 一个简单、清爽的 Android 饮水记录 App。
 
 记录每天喝了多少水，看看自己有没有达到今日目标。

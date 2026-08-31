@@ -1,5 +1,7 @@
 # Hydro 💧
 
+[**English**](README.md) | [**简体中文**](README.zh.md)
+
 A small and simple water tracking app for Android.
 
 Track how much water you drink each day and see whether you reach your daily goal.
