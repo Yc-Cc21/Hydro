@@ -1,33 +1,31 @@
 # Hydro 💧
 
-[**English**](README.md) | [**简体中文**](README.zh.md)
+一个简单、清爽的 Android 饮水记录 App。
 
-A small and simple water tracking app for Android.
+记录每天喝了多少水，看看自己有没有达到今日目标。
 
-Track how much water you drink each day and see whether you reach your daily goal.
+## 功能特性
 
-## Features
+- 快速记录饮水量
+- 自定义每日饮水目标
+- 每日零点自动重置
+- 撤回上一次饮水记录
+- 查看历史饮水记录
+- 本地持久化保存数据（离线可用）
+- Material Design 3 界面
+- 支持深色模式
 
-- Quick water logging
-- Custom daily water goal
-- Daily auto reset at midnight
-- Undo last entry
-- Water history
-- Local data persistence (works offline)
-- Material Design 3
-- Dark mode
+## 截图
 
-## Screenshots
-
-| Home | History | Settings |
+| 首页 | 历史 | 设置 |
 | --- | --- | --- |
-| ![Hydro home](screenshots/home.png) | ![Hydro history](screenshots/history.png) | ![Hydro settings](screenshots/settings.png) |
+| ![Hydro 首页](screenshots/home.png) | ![Hydro 历史](screenshots/history.png) | ![Hydro 设置](screenshots/settings.png) |
 
-## Download
+## 下载
 
-Current version is [v1.1.0](../../releases/tag/v1.1.0).
+当前版本为 [v1.1.0](../../releases/tag/v1.1.0)。
 
-## Built With
+## 技术栈
 
 - Kotlin
 - Jetpack Compose
@@ -35,19 +33,19 @@ Current version is [v1.1.0](../../releases/tag/v1.1.0).
 - Room
 - DataStore
 
-## About This Project
+## 关于这个项目
 
-Hydro is a personal side project. I wanted to build a simple water tracking tool and try out the modern Android tech stack from scratch.
+Hydro 是一个个人小项目。我想做一个简单的饮水记录工具，并从零开始尝试现代 Android 技术栈。
 
-This project is also an experiment in learning Android development and trying out Vibe Coding.
+这个项目也是学习 Android 开发，以及尝试 Vibe Coding 的一个小实验。
 
-## License
+## 许可证
 
-This project is licensed under the [MIT License](LICENSE).
+本项目使用 [MIT License](LICENSE)。
 
-## Author
+## 作者
 
 Yc-Cc21  
 GitHub: [https://github.com/Yc-Cc21](https://github.com/Yc-Cc21)
 
-Made with 💧 and a little bit of Vibe Coding.
+用 💧 和一点点 Vibe Coding 完成。
