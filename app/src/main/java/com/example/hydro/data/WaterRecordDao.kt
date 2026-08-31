@@ -30,4 +30,7 @@ interface WaterRecordDao {
         """
     )
     suspend fun getForDate(startOfDay: Long, startOfNextDay: Long): List<WaterRecord>
+
+    @Query("DELETE FROM water_records WHERE id = :id")
+    suspend fun deleteById(id: Long)
 }

@@ -6,9 +6,18 @@ import androidx.lifecycle.viewModelScope
 import com.example.hydro.data.WaterRecord
 import com.example.hydro.data.WaterRecordDao
 import com.example.hydro.data.SettingsRepository
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.channels.BufferOverflow
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.time.LocalDate
@@ -18,15 +27,35 @@ class HomeViewModel(
     private val waterRecordDao: WaterRecordDao,
     private val settingsRepository: SettingsRepository
 ) : ViewModel() {
-    private val today = todayRange()
+    private val dateCheckRequests = MutableSharedFlow<Unit>(
+        extraBufferCapacity = 1,
+        onBufferOverflow = BufferOverflow.DROP_OLDEST
+    )
 
-    val todayWaterMl: StateFlow<Int> = waterRecordDao
-        .observeForDate(today.start, today.end)
+    @OptIn(ExperimentalCoroutinesApi::class)
+    private val todayRecords: StateFlow<List<WaterRecord>> = merge(flowOf(Unit), dateCheckRequests)
+        .flatMapLatest { currentDayRangeFlow() }
+        .flatMapLatest { range -> waterRecordDao.observeForDate(range.start, range.end) }
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5_000),
+            initialValue = emptyList()
+        )
+
+    val todayWaterMl: StateFlow<Int> = todayRecords
         .map { records -> records.sumOf { it.amountMl } }
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5_000),
             initialValue = 0
+        )
+
+    val canUndoWater: StateFlow<Boolean> = todayRecords
+        .map { records -> records.isNotEmpty() }
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5_000),
+            initialValue = false
         )
 
     val allWaterRecords: StateFlow<List<WaterRecord>> = waterRecordDao
@@ -55,6 +84,20 @@ class HomeViewModel(
         }
     }
 
+    fun undoLastWater() {
+        viewModelScope.launch {
+            val range = todayRange()
+            val lastRecord = waterRecordDao
+                .getForDate(range.start, range.end)
+                .firstOrNull() ?: return@launch
+            waterRecordDao.deleteById(lastRecord.id)
+        }
+    }
+
+    fun refreshTodayIfDateChanged() {
+        dateCheckRequests.tryEmit(Unit)
+    }
+
     fun updateDailyGoal(goalMl: Int) {
         viewModelScope.launch {
             settingsRepository.setDailyGoalMl(goalMl)
@@ -74,6 +117,16 @@ class HomeViewModel(
         return TimeRange(start = startOfDay, end = startOfNextDay)
     }
 
+    private fun currentDayRangeFlow(): Flow<TimeRange> = flow {
+        while (true) {
+            val range = todayRange()
+            emit(range)
+            val millisUntilTomorrow =
+                range.end - System.currentTimeMillis() + ROLLOVER_GRACE_MILLIS
+            delay(millisUntilTomorrow.coerceAtLeast(MIN_RECHECK_INTERVAL_MILLIS))
+        }
+    }
+
     class Factory(
         private val waterRecordDao: WaterRecordDao,
         private val settingsRepository: SettingsRepository
@@ -85,5 +138,10 @@ class HomeViewModel(
             }
             throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")
         }
+    }
+
+    private companion object {
+        const val ROLLOVER_GRACE_MILLIS = 1_000L
+        const val MIN_RECHECK_INTERVAL_MILLIS = 1_000L
     }
 }

@@ -20,6 +20,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.Undo
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Settings
@@ -38,12 +39,16 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
@@ -78,6 +83,7 @@ class MainActivity : ComponentActivity() {
 @OptIn(ExperimentalMaterial3Api::class)
 private fun HydroApp(homeViewModel: HomeViewModel) {
     val currentMl by homeViewModel.todayWaterMl.collectAsStateWithLifecycle()
+    val canUndoWater by homeViewModel.canUndoWater.collectAsStateWithLifecycle()
     val allWaterRecords by homeViewModel.allWaterRecords.collectAsStateWithLifecycle()
     val dailyGoalMl by homeViewModel.dailyGoalMl.collectAsStateWithLifecycle()
     val selectedDestination = rememberSaveable { mutableIntStateOf(0) }
@@ -85,6 +91,17 @@ private fun HydroApp(homeViewModel: HomeViewModel) {
     val isHistorySelected = selectedDestination.intValue == 1
     val isSettingsSelected = selectedDestination.intValue == 2
     val context = LocalContext.current
+
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                homeViewModel.refreshTodayIfDateChanged()
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),
@@ -174,7 +191,9 @@ private fun HydroApp(homeViewModel: HomeViewModel) {
             HomeScreen(
                 currentMl = currentMl,
                 goalMl = dailyGoalMl,
+                canUndoWater = canUndoWater,
                 onAddWater = homeViewModel::addWater,
+                onUndoLastWater = homeViewModel::undoLastWater,
                 modifier = Modifier.padding(innerPadding)
             )
         }
@@ -185,7 +204,9 @@ private fun HydroApp(homeViewModel: HomeViewModel) {
 private fun HomeScreen(
     currentMl: Int,
     goalMl: Int,
+    canUndoWater: Boolean,
     onAddWater: (Int) -> Unit,
+    onUndoLastWater: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val progress = (currentMl.toFloat() / goalMl).coerceIn(0f, 1f)
@@ -290,6 +311,22 @@ private fun HomeScreen(
                 }
             }
         }
+
+        OutlinedButton(
+            onClick = onUndoLastWater,
+            enabled = canUndoWater,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(56.dp),
+            shape = MaterialTheme.shapes.large
+        ) {
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.Undo,
+                contentDescription = null
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(text = "撤回上一次", fontSize = 16.sp)
+        }
     }
 }
 
@@ -300,7 +337,9 @@ private fun HomeScreenPreview() {
         HomeScreen(
             currentMl = 0,
             goalMl = 2000,
-            onAddWater = {}
+            canUndoWater = false,
+            onAddWater = {},
+            onUndoLastWater = {}
         )
     }
 }
