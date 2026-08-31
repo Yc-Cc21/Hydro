@@ -20,8 +20,20 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    signingConfigs {
+        create("release") {
+            storeFile = rootProject.file("hydro-release.jks")
+            storePassword = providers.gradleProperty("HYDRO_RELEASE_STORE_PASSWORD").orNull
+                ?: error("HYDRO_RELEASE_STORE_PASSWORD is not configured")
+            keyAlias = "hydro"
+            keyPassword = providers.gradleProperty("HYDRO_RELEASE_KEY_PASSWORD").orNull
+                ?: error("HYDRO_RELEASE_KEY_PASSWORD is not configured")
+        }
+    }
+
     buildTypes {
         release {
+            signingConfig = signingConfigs.getByName("release")
             optimization {
                 enable = false
             }

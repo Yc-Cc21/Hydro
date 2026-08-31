@@ -27,3 +27,7 @@ local.properties
 hs_err_pid*.log
 replay_pid*.log
 *.hprof
+
+# Android release signing keys
+*.jks
+*.keystore
