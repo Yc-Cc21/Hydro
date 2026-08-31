@@ -14,6 +14,8 @@ A small and simple water tracking app for Android.
 - 查看历史饮水记录
 - 本地持久化保存数据
 - 支持深色模式
+- 每日自动重置饮水进度
+- 撤回上一次饮水记录
 - Material Design 3 界面
 
 ## Screenshots
@@ -24,7 +26,7 @@ A small and simple water tracking app for Android.
 
 ## Download
 
-当前版本为 [v1.0.0](../../releases)。
+当前版本为 [v1.1.0](../../releases/tag/v1.1.0)。
 
 ## Built With
 
