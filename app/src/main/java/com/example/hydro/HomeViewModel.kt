@@ -6,6 +6,8 @@ import androidx.lifecycle.viewModelScope
 import com.example.hydro.data.WaterRecord
 import com.example.hydro.data.WaterRecordDao
 import com.example.hydro.data.SettingsRepository
+import com.example.hydro.data.MAX_QUICK_RECORD_ML
+import com.example.hydro.data.MIN_QUICK_RECORD_ML
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.delay
@@ -43,7 +45,12 @@ class HomeViewModel(
         )
 
     val todayWaterMl: StateFlow<Int> = todayRecords
-        .map { records -> records.sumOf { it.amountMl } }
+        .map { records ->
+            records
+                .fold(0L) { total, record -> total + record.amountMl.toLong() }
+                .coerceIn(0L, Int.MAX_VALUE.toLong())
+                .toInt()
+        }
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5_000),
@@ -73,7 +80,15 @@ class HomeViewModel(
             initialValue = 2000
         )
 
+    val quickRecordAmounts: StateFlow<List<Int>> = settingsRepository.quickRecordAmounts
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5_000),
+            initialValue = listOf(100, 300, 400)
+        )
+
     fun addWater(amountMl: Int) {
+        if (amountMl !in MIN_QUICK_RECORD_ML..MAX_QUICK_RECORD_ML) return
         viewModelScope.launch {
             waterRecordDao.insert(
                 WaterRecord(
@@ -101,6 +116,12 @@ class HomeViewModel(
     fun updateDailyGoal(goalMl: Int) {
         viewModelScope.launch {
             settingsRepository.setDailyGoalMl(goalMl)
+        }
+    }
+
+    fun updateQuickRecordAmounts(amounts: List<Int>) {
+        viewModelScope.launch {
+            settingsRepository.setQuickRecordAmounts(amounts)
         }
     }
 

@@ -34,6 +34,7 @@ import androidx.compose.ui.unit.dp
 fun SettingsScreen(
     dailyGoalMl: Int,
     onDailyGoalChanged: (Int) -> Unit,
+    onQuickRecordSettingsClick: () -> Unit,
     onAboutClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -79,6 +80,33 @@ fun SettingsScreen(
                 Icon(
                     imageVector = Icons.Filled.ChevronRight,
                     contentDescription = "修改每日饮水目标",
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = MaterialTheme.shapes.extraLarge,
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceVariant
+            )
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable(onClick = onQuickRecordSettingsClick)
+                    .padding(20.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "快速记录设置",
+                    style = MaterialTheme.typography.titleMedium,
+                    modifier = Modifier.weight(1f)
+                )
+                Icon(
+                    imageVector = Icons.Filled.ChevronRight,
+                    contentDescription = "打开快速记录设置",
                     tint = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }

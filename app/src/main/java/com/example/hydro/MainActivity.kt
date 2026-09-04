@@ -4,6 +4,7 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.Arrangement
@@ -15,6 +16,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -24,13 +26,16 @@ import androidx.compose.material.icons.automirrored.filled.Undo
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.OutlinedButton
@@ -86,8 +91,11 @@ private fun HydroApp(homeViewModel: HomeViewModel) {
     val canUndoWater by homeViewModel.canUndoWater.collectAsStateWithLifecycle()
     val allWaterRecords by homeViewModel.allWaterRecords.collectAsStateWithLifecycle()
     val dailyGoalMl by homeViewModel.dailyGoalMl.collectAsStateWithLifecycle()
+    val quickRecordAmounts by homeViewModel.quickRecordAmounts.collectAsStateWithLifecycle()
     val selectedDestination = rememberSaveable { mutableIntStateOf(0) }
     var showAbout by rememberSaveable { mutableStateOf(false) }
+    var showQuickRecordSettings by rememberSaveable { mutableStateOf(false) }
+    var showFlexibleRecord by rememberSaveable { mutableStateOf(false) }
     val isHistorySelected = selectedDestination.intValue == 1
     val isSettingsSelected = selectedDestination.intValue == 2
     val context = LocalContext.current
@@ -103,6 +111,14 @@ private fun HydroApp(homeViewModel: HomeViewModel) {
         onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
 
+    BackHandler(enabled = showAbout) {
+        showAbout = false
+    }
+
+    BackHandler(enabled = showQuickRecordSettings) {
+        showQuickRecordSettings = false
+    }
+
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         topBar = {
@@ -111,6 +127,18 @@ private fun HydroApp(homeViewModel: HomeViewModel) {
                     title = { Text(text = "关于 Hydro") },
                     navigationIcon = {
                         IconButton(onClick = { showAbout = false }) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                contentDescription = "返回设置"
+                            )
+                        }
+                    }
+                )
+            } else if (showQuickRecordSettings) {
+                TopAppBar(
+                    title = { Text(text = "快速记录设置") },
+                    navigationIcon = {
+                        IconButton(onClick = { showQuickRecordSettings = false }) {
                             Icon(
                                 imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                                 contentDescription = "返回设置"
@@ -141,6 +169,8 @@ private fun HydroApp(homeViewModel: HomeViewModel) {
                     onClick = {
                         selectedDestination.intValue = 0
                         showAbout = false
+                        showQuickRecordSettings = false
+                        showFlexibleRecord = false
                     },
                     icon = { Icon(Icons.Filled.Home, contentDescription = "首页") },
                     label = { Text("首页") }
@@ -150,6 +180,8 @@ private fun HydroApp(homeViewModel: HomeViewModel) {
                     onClick = {
                         selectedDestination.intValue = 1
                         showAbout = false
+                        showQuickRecordSettings = false
+                        showFlexibleRecord = false
                     },
                     icon = { Icon(Icons.Filled.History, contentDescription = "历史") },
                     label = { Text("历史") }
@@ -159,6 +191,8 @@ private fun HydroApp(homeViewModel: HomeViewModel) {
                     onClick = {
                         selectedDestination.intValue = 2
                         showAbout = false
+                        showQuickRecordSettings = false
+                        showFlexibleRecord = false
                     },
                     icon = { Icon(Icons.Filled.Settings, contentDescription = "设置") },
                     label = { Text("设置") }
@@ -175,6 +209,12 @@ private fun HydroApp(homeViewModel: HomeViewModel) {
                 },
                 modifier = Modifier.padding(innerPadding)
             )
+        } else if (showQuickRecordSettings) {
+            QuickRecordSettingsScreen(
+                amounts = quickRecordAmounts,
+                onSave = homeViewModel::updateQuickRecordAmounts,
+                modifier = Modifier.padding(innerPadding)
+            )
         } else if (isHistorySelected) {
             HistoryScreen(
                 records = allWaterRecords,
@@ -184,6 +224,7 @@ private fun HydroApp(homeViewModel: HomeViewModel) {
             SettingsScreen(
                 dailyGoalMl = dailyGoalMl,
                 onDailyGoalChanged = homeViewModel::updateDailyGoal,
+                onQuickRecordSettingsClick = { showQuickRecordSettings = true },
                 onAboutClick = { showAbout = true },
                 modifier = Modifier.padding(innerPadding)
             )
@@ -191,10 +232,28 @@ private fun HydroApp(homeViewModel: HomeViewModel) {
             HomeScreen(
                 currentMl = currentMl,
                 goalMl = dailyGoalMl,
+                quickRecordAmounts = quickRecordAmounts,
                 canUndoWater = canUndoWater,
                 onAddWater = homeViewModel::addWater,
                 onUndoLastWater = homeViewModel::undoLastWater,
+                onFlexibleRecordClick = {
+                    showFlexibleRecord = true
+                },
                 modifier = Modifier.padding(innerPadding)
+            )
+        }
+    }
+
+    if (showFlexibleRecord) {
+        ModalBottomSheet(
+            onDismissRequest = { showFlexibleRecord = false }
+        ) {
+            FlexibleRecordSheet(
+                onConfirm = { amountMl ->
+                    homeViewModel.addWater(amountMl)
+                    showFlexibleRecord = false
+                },
+                modifier = Modifier.navigationBarsPadding()
             )
         }
     }
@@ -204,9 +263,11 @@ private fun HydroApp(homeViewModel: HomeViewModel) {
 private fun HomeScreen(
     currentMl: Int,
     goalMl: Int,
+    quickRecordAmounts: List<Int>,
     canUndoWater: Boolean,
     onAddWater: (Int) -> Unit,
     onUndoLastWater: () -> Unit,
+    onFlexibleRecordClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val progress = (currentMl.toFloat() / goalMl).coerceIn(0f, 1f)
@@ -279,14 +340,32 @@ private fun HomeScreen(
             }
         }
 
-        Button(
-            onClick = { onAddWater(250) },
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(56.dp),
-            shape = MaterialTheme.shapes.large
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
         ) {
-            Text(text = "+ 250 ml", fontSize = 16.sp)
+            Button(
+                onClick = { onAddWater(250) },
+                modifier = Modifier
+                    .weight(1f)
+                    .height(56.dp),
+                shape = MaterialTheme.shapes.large
+            ) {
+                Text(text = "+ 250 ml", fontSize = 16.sp)
+            }
+
+            FilledTonalIconButton(
+                onClick = onUndoLastWater,
+                enabled = canUndoWater,
+                modifier = Modifier.size(56.dp),
+                shape = MaterialTheme.shapes.large
+            ) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.Undo,
+                    contentDescription = "撤回上一次饮水"
+                )
+            }
         }
 
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -298,35 +377,35 @@ private fun HomeScreen(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                listOf("150 ml", "250 ml", "500 ml").forEach { amount ->
+                quickRecordAmounts.forEach { amount ->
                     OutlinedButton(
                         onClick = {
-                            onAddWater(amount.removeSuffix(" ml").toInt())
+                            onAddWater(amount)
                         },
                         modifier = Modifier.weight(1f),
                         shape = MaterialTheme.shapes.large
                     ) {
-                        Text(text = amount)
+                        Text(text = "$amount ml")
                     }
                 }
             }
         }
 
         OutlinedButton(
-            onClick = onUndoLastWater,
-            enabled = canUndoWater,
+            onClick = onFlexibleRecordClick,
             modifier = Modifier
                 .fillMaxWidth()
                 .height(56.dp),
             shape = MaterialTheme.shapes.large
         ) {
             Icon(
-                imageVector = Icons.AutoMirrored.Filled.Undo,
+                imageVector = Icons.Filled.Tune,
                 contentDescription = null
             )
             Spacer(modifier = Modifier.width(8.dp))
-            Text(text = "撤回上一次", fontSize = 16.sp)
+            Text(text = "灵活记录", fontSize = 16.sp)
         }
+
     }
 }
 
@@ -337,9 +416,11 @@ private fun HomeScreenPreview() {
         HomeScreen(
             currentMl = 0,
             goalMl = 2000,
+            quickRecordAmounts = listOf(100, 300, 400),
             canUndoWater = false,
             onAddWater = {},
-            onUndoLastWater = {}
+            onUndoLastWater = {},
+            onFlexibleRecordClick = {}
         )
     }
 }
