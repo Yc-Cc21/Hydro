@@ -2,9 +2,9 @@
 
 Material Design 3风格的 Android 饮水记录 App。
 
-个人Vibe Coding小项目，不喜勿喷
-
 记录每天喝了多少水，看看自己有没有达到今日目标。
+
+个人尝试Vibe Coding的小项目，算是一个成长学习过程的记录，可能会有意想不到的Bug，功能可能不完善。（整个项目唯一手写的一句话）
 
 ## 功能特性
 
@@ -29,7 +29,3 @@ Material Design 3风格的 Android 饮水记录 App。
 - Material 3
 - Room
 - DataStore
-
-## 许可证
-
-本项目使用 [MIT License](LICENSE)。
